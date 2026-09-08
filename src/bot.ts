@@ -1,6 +1,6 @@
 import { Bot } from "grammy";
 import { analyzeIntent, chatGemini, parseReminder, generateStatsReply, transcribeAudio, chatProGemini } from "./gemini";
-import { addTodo, getUserTodos, incrementProUsage } from "./supabase";
+import { addTodo, getUserTodos, incrementProUsage, recordReadArticle } from "./supabase";
 
 // 🚀 الحل القاطع الجذري: تمرير معلومات البوت يدوياً لمنع خطأ التهيئة للأبد
 export const bot = new Bot(process.env.BOT_TOKEN!, {
@@ -111,8 +111,29 @@ bot.command("todo", (ctx) => {
 
 bot.command("dental", async (ctx) => {
     await ctx.replyWithChatAction("typing");
-    const reply = await chatGemini("اكتب معلومة طبية سريعة ومختصرة جداً في طب الأسنان (بيزكس كلينكال) كأنها مقال قصير لدكتور ماركو.");
-    return ctx.reply("🦷 مقال كلينيكال:\n\n" + reply);
+    
+    const articlePrompt = `
+أنت أستاذ جامعي في طب الأسنان (Basic Clinical Science). 
+اكتب مقالاً علمياً محترماً ومفصلاً لدكتور أسنان عن موضوع عشوائي أو محدد في Basic Clinical Science.
+يجب أن يحتوي المقال على:
+- عنوان واضح.
+- مقدمة علمية.
+- صلب الموضوع (Pathophysiology أو Clinical details).
+- تطبيق إكلينيكي (Clinical Application).
+- رابط (Link): قم بإنشاء رابط بحث حقيقي على موقع PubMed يبحث عن هذا الموضوع (مثال: https://pubmed.ncbi.nlm.nih.gov/?term=dental+caries+management).
+اكتب المقال بأسلوب طبي احترافي شيق.
+`;
+    const reply = await chatGemini(articlePrompt);
+    
+    // إنشاء أزرار تفاعلية للمقال
+    const buttons = [
+        [{ text: "📖 أتممت القراءة", callback_data: `art_read` }],
+        [{ text: "🔗 فتحت الرابط وقرأته", callback_data: `art_link` }]
+    ];
+    
+    return ctx.reply("🦷 مقال كلينيكال:\n\n" + reply, {
+        reply_markup: { inline_keyboard: buttons }
+    });
 });
 
 bot.command("news", async (ctx) => {
@@ -135,6 +156,21 @@ bot.command("achievements", (ctx) => {
 
 bot.on("callback_query:data", async (ctx) => {
     const data = ctx.callbackQuery.data;
+    
+    // معالجة أزرار المقالات
+    if (data.startsWith("art_")) {
+        const type = data === "art_read" ? "قراءة مقال" : "فتح وقراءة رابط مقال";
+        const userId = String(ctx.from?.id);
+        
+        await recordReadArticle(type, userId);
+        await ctx.answerCallbackQuery({ text: `🎉 عظيم جداً يا دكتور! تم تسجيل إنجازك (${type}) في سجلات الشهر بنجاح! 💪`, show_alert: true });
+        
+        // يمكن إزالة الأزرار إذا أردنا:
+        // await ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } });
+        return;
+    }
+    
+    // معالجة أزرار قائمة المهام
     if (data.startsWith("rtn_")) {
         const state = data.split("_")[1];
         const { text, buttons } = buildRoutineMessage(state);

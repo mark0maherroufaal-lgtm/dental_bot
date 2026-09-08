@@ -66,3 +66,14 @@ export async function incrementProUsage(): Promise<number> {
         return 0; // في حالة الخطأ، نمررها برقم 0 لكي لا يتعطل البوت
     }
 }
+
+export async function recordReadArticle(title: string, userId: string) {
+    const { data, error } = await supabase
+        .from("read_articles")
+        .insert([{ user_id: userId, title }]);
+    
+    if (error) {
+        console.error("Error inserting article:", error);
+    }
+    return data;
+}
