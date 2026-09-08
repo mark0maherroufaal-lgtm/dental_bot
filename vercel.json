@@ -5,5 +5,5 @@
     { "src": "/webhook", "dest": "/api/bot.ts" },
     { "src": "/cron", "dest": "/api/cron.ts" }
   ],
-  "crons": [{ "path": "/cron", "schedule": "*/5 * * * *" }]
+  "crons": [{ "path": "/cron", "schedule": "0 0 * * *" }]
 }
