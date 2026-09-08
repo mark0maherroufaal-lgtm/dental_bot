@@ -1,0 +1,15 @@
+{
+  "name": "dr-marko-bot",
+  "version": "2.0.0",
+  "scripts": { "build": "tsc" },
+  "dependencies": {
+    "@google/generative-ai": "^0.2.1",
+    "@supabase/supabase-js": "^2.39.7",
+    "grammy": "^1.21.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@vercel/node": "^3.0.1",
+    "typescript": "^5.3.3"
+  }
+}
