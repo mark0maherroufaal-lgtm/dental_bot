@@ -1,11 +1,14 @@
 {
   "name": "dr-marko-bot",
   "version": "2.0.0",
-  "scripts": { "build": "tsc" },
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
     "@supabase/supabase-js": "^2.39.7",
-    "grammy": "^1.21.1"
+    "grammy": "^1.21.1",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.16",
