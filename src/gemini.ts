@@ -13,18 +13,18 @@ const SYSTEM_INSTRUCTIONS = `
 `;
 
 const chatModel = genAI.getGenerativeModel({ 
-    model: "gemini-flash-latest",
+    model: "gemini-flash-lite-latest",
     systemInstruction: SYSTEM_INSTRUCTIONS
 });
 
 const jsonModel = genAI.getGenerativeModel({ 
-    model: "gemini-flash-latest",
+    model: "gemini-flash-lite-latest",
     generationConfig: { responseMimeType: "application/json" }
 });
 
 // 🚀 الموديل الخارق للمهام المعقدة
 const proModel = genAIPro.getGenerativeModel({ 
-    model: "gemini-3.8-flash",
+    model: "gemini-3.7-flash",
     systemInstruction: "أنت خبير ومعاون طبي محترف للدكتور ماركو. قم بتحليل الطلب بعمق وقدم تفاصيل دقيقة واحترافية."
 });
 
