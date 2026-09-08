@@ -6,17 +6,15 @@ export async function addTodo(task: string, dueDate: string, userId: string) {
     await supabase.from('todos').insert([{ title: task, due_date: dueDate, user_id: userId, status: 'open' }]);
 }
 
-// 🚀 [جديد] دالة لجلب مهام المستخدم للإحصائيات
 export async function getUserTodos(userId: string) {
     try {
-        // جلب المهام المفتوحة (التي لم تكتمل بعد) مرتبة حسب التاريخ
         const { data, error } = await supabase
             .from('todos')
             .select('*')
             .eq('user_id', userId)
             .eq('status', 'open')
             .order('due_date', { ascending: true })
-            .limit(30); // جلب أقرب 30 مهمة كحد أقصى لتجنب إرهاق الذكاء الاصطناعي
+            .limit(30); 
             
         return data || [];
     } catch (e) {
@@ -39,5 +37,32 @@ export async function markUpdateProcessed(updateId: number) {
         await supabase.from('processed_updates').insert([{ update_id: updateId }]);
     } catch (e) {
         console.error("Failed to mark update", e);
+    }
+}
+
+// 🚀 [جديد] عداد الباقة الذكي لموديل Pro
+export async function incrementProUsage(): Promise<number> {
+    try {
+        const today = new Date().toISOString().split('T')[0]; // صيغة YYYY-MM-DD
+        
+        let { data, error } = await supabase
+            .from('api_usage')
+            .select('pro_requests')
+            .eq('date', today)
+            .single();
+            
+        if (!data) {
+            // أول رسالة اليوم
+            await supabase.from('api_usage').insert([{ date: today, pro_requests: 1 }]);
+            return 1;
+        } else {
+            // زيادة العداد
+            const newCount = data.pro_requests + 1;
+            await supabase.from('api_usage').update({ pro_requests: newCount }).eq('date', today);
+            return newCount;
+        }
+    } catch (e) {
+        console.error("Usage Tracking Error:", e);
+        return 0; // في حالة الخطأ، نمررها برقم 0 لكي لا يتعطل البوت
     }
 }

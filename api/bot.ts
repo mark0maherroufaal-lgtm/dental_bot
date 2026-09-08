@@ -13,15 +13,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (alreadyProcessed) {
                     return res.status(200).send("Duplicate ignored");
                 }
+                
+                // 🔥 الحل السحري: تهيئة البوت يدوياً قبل المعالجة
+                await bot.init();
+                
                 await bot.handleUpdate(update);
                 await markUpdateProcessed(update.update_id);
             }
             
-            // رد 200 دائماً لحماية الـ Webhook
+            // الرد بـ 200 دائماً لحماية الـ Webhook
             res.status(200).send("OK");
         } catch (e) {
             console.error(e);
-            // حماية الـ Webhook عند الخطأ (Graceful degradation)
             res.status(200).send("Error handled gracefully");
         }
     } else {
