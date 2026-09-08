@@ -7,7 +7,9 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.39.7",
+    "dotenv": "^17.4.2",
     "grammy": "^1.21.1",
+    "groq-sdk": "^1.6.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
