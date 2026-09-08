@@ -77,9 +77,9 @@ export async function chatGemini(text: string) {
     try {
         const res = await chatModel.generateContent(text);
         return res.response.text();
-    } catch(e) {
+    } catch(e: any) {
         console.error("Gemini Chat Error:", e);
-        return "عذراً يا دكتور، السيرفر مشغول حالياً.";
+        return "حدث خطأ: " + e.message;
     }
 }
 
@@ -125,8 +125,8 @@ export async function generateStatsReply(text: string, todos: any[]) {
         `;
         const res = await chatModel.generateContent(prompt); 
         return res.response.text();
-    } catch(e) {
+    } catch(e: any) {
         console.error("Gemini Stats Error:", e);
-        return "عذراً يا دكتور، حدث خطأ أثناء قراءة جدول أعمالك.";
+        return "عذراً يا دكتور، حدث خطأ: " + e.message;
     }
 }
