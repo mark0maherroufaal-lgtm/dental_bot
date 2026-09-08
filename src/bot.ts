@@ -45,20 +45,28 @@ function buildRoutineMessage(state: string) {
         const isDone = state[i] === '1';
         if (isDone) completedCount++;
         
-        const prefix = isDone ? "✅" : "⏳";
-        text += `${i+1}. ${prefix} ${ROUTINE_TASKS[i]}\n`;
+        if (isDone) {
+            // Strikethrough the text when done using HTML
+            text += `✅ ${i+1}. <s>${ROUTINE_TASKS[i]}</s>\n`;
+        } else {
+            text += `${i+1}. ${ROUTINE_TASKS[i]}\n`;
+        }
         
         const newState = state.substring(0, i) + (isDone ? '0' : '1') + state.substring(i+1);
         
+        // كلمات مختصرة لتظهر على الأزرار بدلاً من الأرقام
+        const SHORT_NAMES = ["أكاديمي", "أوبريتف", "فكسد", "روحي", "شطرنج", "إنجليزي"];
+        const btnText = `${isDone ? "❌" : "✔️"} ${SHORT_NAMES[i]}`;
+
         // Two buttons per row
         if (i % 2 === 0) {
             buttons.push([{
-                text: `${isDone ? "❌" : "✔️"} ${i+1}`,
+                text: btnText,
                 callback_data: `rtn_${newState}`
             }]);
         } else {
             buttons[buttons.length - 1].push({
-                text: `${isDone ? "❌" : "✔️"} ${i+1}`,
+                text: btnText,
                 callback_data: `rtn_${newState}`
             });
         }
@@ -68,11 +76,16 @@ function buildRoutineMessage(state: string) {
     const filledBlocks = Math.round(percentage / 10);
     const progressBar = "▓".repeat(filledBlocks) + "░".repeat(10 - filledBlocks);
     
-    let header = `📋 مهام اليوم التفاعلية\n`;
+    const now = new Date();
+    // Getting YYYY-MM-DD in Cairo time
+    const dateStr = now.toLocaleDateString("en-CA", { timeZone: "Africa/Cairo" }); 
+    const dayStr = now.toLocaleDateString("en-US", { weekday: 'long', timeZone: "Africa/Cairo" });
+
+    let header = `📋 مهام اليوم التفاعلية | ${dateStr} | ${dayStr}\n`;
     header += `📊 الإنجاز: [${progressBar}] ${percentage}% (${completedCount}/${ROUTINE_TASKS.length})\n`;
     header += `─────────────────────────────\n`;
     header += text;
-    header += `─────────────────────────────\n👇 اضغط على الأرقام أدناه لشطب أو استرجاع المهمة:\n`;
+    header += `─────────────────────────────\n👇 اضغط على الزر لشطب أو استرجاع المهمة:\n`;
     
     return { text: header, buttons };
 }
@@ -93,7 +106,7 @@ bot.command("start", async (ctx) => {
 
 bot.command("todo", (ctx) => {
     const { text, buttons } = buildRoutineMessage("000000");
-    return ctx.reply(text, { reply_markup: { inline_keyboard: buttons } });
+    return ctx.reply(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
 });
 
 bot.command("dental", async (ctx) => {
@@ -126,7 +139,7 @@ bot.on("callback_query:data", async (ctx) => {
         const state = data.split("_")[1];
         const { text, buttons } = buildRoutineMessage(state);
         try {
-            await ctx.editMessageText(text, { reply_markup: { inline_keyboard: buttons } });
+            await ctx.editMessageText(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
         } catch (e) {
             // Ignore if message is identical
         }
