@@ -27,8 +27,77 @@ bot.catch((err) => {
     console.error(err.error);
 });
 
+const ROUTINE_TASKS = [
+    "[أكاديمي] مذاكرة 7 صفحات أوكسفورد (Restoration)",
+    "[عملي] تحضير سنة أوبريتف (Cavity Prep)",
+    "[عملي] تحضير سنة فكسد ريدكشن",
+    "[روحي] فيديو د. أبونا لوقا (رومية 2)",
+    "[شطرنج] ساعة راحة وتطوير المدرب",
+    "[إنجليزي] تدريب مهارات الإنجليزي اليومية"
+];
+
+function buildRoutineMessage(state: string) {
+    let completedCount = 0;
+    const buttons = [];
+    let text = "";
+    
+    for (let i=0; i<ROUTINE_TASKS.length; i++) {
+        const isDone = state[i] === '1';
+        if (isDone) completedCount++;
+        
+        const prefix = isDone ? "✅" : "⏳";
+        text += `${i+1}. ${prefix} ${ROUTINE_TASKS[i]}\n`;
+        
+        const newState = state.substring(0, i) + (isDone ? '0' : '1') + state.substring(i+1);
+        
+        // Two buttons per row
+        if (i % 2 === 0) {
+            buttons.push([{
+                text: `${isDone ? "❌" : "✔️"} ${i+1}`,
+                callback_data: `rtn_${newState}`
+            }]);
+        } else {
+            buttons[buttons.length - 1].push({
+                text: `${isDone ? "❌" : "✔️"} ${i+1}`,
+                callback_data: `rtn_${newState}`
+            });
+        }
+    }
+    
+    const percentage = Math.round((completedCount / ROUTINE_TASKS.length) * 100);
+    const filledBlocks = Math.round(percentage / 10);
+    const progressBar = "▓".repeat(filledBlocks) + "░".repeat(10 - filledBlocks);
+    
+    let header = `📋 مهام اليوم التفاعلية\n`;
+    header += `📊 الإنجاز: [${progressBar}] ${percentage}% (${completedCount}/${ROUTINE_TASKS.length})\n`;
+    header += `─────────────────────────────\n`;
+    header += text;
+    header += `─────────────────────────────\n👇 اضغط على الأرقام أدناه لشطب أو استرجاع المهمة:\n`;
+    
+    return { text: header, buttons };
+}
+
 bot.command("start", (ctx) => {
-    ctx.reply("أهلاً دكتور ماركو! البوت السحابي (v3.5) يعمل الآن بالذكاء المزدوج (Flash + Pro) 🚀🧠");
+    ctx.reply("مرحباً دكتور ماركو! البوت يعمل الآن بنجاح.\nجرب إرسال /today لعرض روتينك اليومي، أو تحدث معي مباشرة.");
+});
+
+bot.command("today", (ctx) => {
+    const { text, buttons } = buildRoutineMessage("000000");
+    return ctx.reply(text, { reply_markup: { inline_keyboard: buttons } });
+});
+
+bot.on("callback_query:data", async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    if (data.startsWith("rtn_")) {
+        const state = data.split("_")[1];
+        const { text, buttons } = buildRoutineMessage(state);
+        try {
+            await ctx.editMessageText(text, { reply_markup: { inline_keyboard: buttons } });
+        } catch (e) {
+            // Ignore if message is identical
+        }
+        await ctx.answerCallbackQuery();
+    }
 });
 
 async function processTextIntent(ctx: any, text: string, userId: string) {
