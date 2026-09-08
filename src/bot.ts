@@ -2,7 +2,21 @@ import { Bot } from "grammy";
 import { analyzeIntent, chatGemini, parseReminder, generateStatsReply, transcribeAudio, chatProGemini } from "./gemini";
 import { addTodo, getUserTodos, incrementProUsage } from "./supabase";
 
-export const bot = new Bot(process.env.BOT_TOKEN!);
+// 🚀 الحل القاطع الجذري: تمرير معلومات البوت يدوياً لمنع خطأ التهيئة للأبد
+export const bot = new Bot(process.env.BOT_TOKEN!, {
+    botInfo: {
+        id: 8696849914,
+        is_bot: true,
+        first_name: "My Dental Secretary",
+        username: "Marko_Dental_bot",
+        can_join_groups: true,
+        can_read_all_group_messages: false,
+        supports_inline_queries: false,
+        supports_guest_queries: false,
+        can_connect_to_business: false,
+        has_main_web_app: false,
+    }
+});
 
 bot.catch((err) => {
     console.error(`Error while handling update ${err.ctx.update.update_id}:`);
@@ -37,12 +51,10 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
         return ctx.reply(reply);
     }
     
-    // 🚀 [جديد] توجيه المهام المعقدة لـ Gemini Pro
     else if (intent === "COMPLEX_ANALYSIS") {
         try {
             const usageCount = await incrementProUsage();
 
-            // إذا انتهت الباقة (أكثر من 50 طلب)
             if (usageCount > 50) {
                 await ctx.reply("⚠️ (تنبيه: باقة الموديل الخارق انتهت اليوم. سأقوم بالرد باستخدام الموديل السريع).");
                 const fallbackReply = await chatGemini(text);
@@ -52,7 +64,6 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
             await ctx.replyWithChatAction("typing");
             const proReply = await chatProGemini(text);
 
-            // تحذير اقتراب انتهاء الباقة
             if (usageCount >= 45 && usageCount <= 50) {
                 const remaining = 50 - usageCount;
                 return ctx.reply(`${proReply}\n\n*(⚠️ حارس الباقة: باقي لك ${remaining} رسائل معقدة فقط اليوم)*`, { parse_mode: "Markdown" });
