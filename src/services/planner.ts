@@ -50,8 +50,7 @@ export async function ensureTodaysTasks(telegramId: string): Promise<Task[]> {
         }
         // ---------------------------------------------
         
-        await createDailyTasks(telegramId, coreTasks);
-        tasks = await getTodaysTasks(telegramId, todayStr);
+        tasks = await createDailyTasks(telegramId, coreTasks);
     }
     
     return tasks;

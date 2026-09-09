@@ -18,14 +18,11 @@ export async function addXpTransaction(telegramId: string, amount: number, reaso
 
 export async function getTotalXp(telegramId: string): Promise<number> {
     try {
-        const { data, error } = await supabase
-            .from('xp_transactions')
-            .select('amount')
-            .eq('telegram_id', telegramId);
-            
-        if (error) throw new DatabaseError("Failed to fetch XP", error);
+        const { data, error } = await supabase.rpc('get_total_xp', { user_id: telegramId });
         
-        return data.reduce((sum, tx) => sum + tx.amount, 0);
+        if (error) throw new DatabaseError("Failed to calculate total XP", error);
+        
+        return data || 0;
     } catch (e: any) {
         console.error(e);
         return 0;

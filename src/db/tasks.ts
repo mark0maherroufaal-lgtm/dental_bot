@@ -15,7 +15,7 @@ export interface Task {
     completed_at?: string;
 }
 
-export async function createDailyTasks(telegramId: string, tasks: Partial<Task>[]) {
+export async function createDailyTasks(telegramId: string, tasks: Partial<Task>[]): Promise<Task[]> {
     try {
         const tasksToInsert = tasks.map(t => ({
             telegram_id: telegramId,
@@ -23,8 +23,9 @@ export async function createDailyTasks(telegramId: string, tasks: Partial<Task>[
             ...t
         }));
         
-        const { error } = await supabase.from('tasks').insert(tasksToInsert);
+        const { data, error } = await supabase.from('tasks').insert(tasksToInsert).select();
         if (error) throw new DatabaseError("Failed to create tasks", error);
+        return data as Task[];
     } catch (e: any) {
         console.error(e);
         throw e;

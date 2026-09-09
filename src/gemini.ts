@@ -7,10 +7,10 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const genAIPro = new GoogleGenerativeAI(process.env.GEMINI_PRO_API_KEY!);
 
 // إعداد مفتاح Groq (الوسيط)
-const p1 = "gsk_zXqDaI";
-const p2 = "Zbw0dkLoeyahixW";
-const p3 = "Gdyb3FYdcJi8NPdTlUIU2wOH8qdR2SC";
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || (p1 + p2 + p3) });
+if (!process.env.GROQ_API_KEY) {
+    console.warn("WARNING: GROQ_API_KEY is missing. Groq AI calls will fail.");
+}
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing_key" });
 
 const SYSTEM_INSTRUCTIONS = `
 أنت سكرتير طبي ذكي ومحترف لدكتور ماركو (طبيب أسنان).
@@ -29,9 +29,15 @@ const textModel = genAI.getGenerativeModel({
     systemInstruction: SYSTEM_INSTRUCTIONS
 });
 
-export async function chatMainGemini(text: string): Promise<string> {
+export async function chatMainGemini(text: string, history: {role: string, content: string}[] = []): Promise<string> {
     try {
-        const res = await textModel.generateContent(text);
+        const chat = textModel.startChat({
+            history: history.map(h => ({
+                role: h.role, // 'user' or 'model'
+                parts: [{ text: h.content }]
+            }))
+        });
+        const res = await chat.sendMessage(text);
         return res.response.text();
     } catch(e) {
         console.error("Gemini Main Chat Error:", e);
@@ -108,14 +114,20 @@ export async function analyzeIntent(text: string) {
     }
 }
 
-// الموديل الوسيط (Groq - Llama 3.1 8B) للاستخدام اليومي والدردشة العامة
-export async function chatGemini(text: string) {
+// الموديل الوسيط (Groq - Qwen 3.8 27B) للاستخدام اليومي والدردشة العامة
+export async function chatGemini(text: string, history: {role: string, content: string}[] = []) {
     try {
+        const messages: any[] = [{ role: "system", content: SYSTEM_INSTRUCTIONS }];
+        
+        // Add context history
+        history.forEach(h => {
+            messages.push({ role: h.role === 'model' ? 'assistant' : 'user', content: h.content });
+        });
+        
+        messages.push({ role: "user", content: text });
+
         const response = await groq.chat.completions.create({
-            messages: [
-                { role: "system", content: SYSTEM_INSTRUCTIONS },
-                { role: "user", content: text }
-            ],
+            messages: messages,
             model: "qwen/qwen3.8-27b",
             max_tokens: 800
         });
@@ -124,7 +136,7 @@ export async function chatGemini(text: string) {
         console.error("Groq Chat Error:", e);
         try {
             // Fallback to Gemini 1.5 Flash
-            const fallbackReply = await chatMainGemini(text);
+            const fallbackReply = await chatMainGemini(text, history);
             return `⚠️ **تنبيه تقني:** توقف المحرك الوسيط (Groq) للسبب التالي:\n\`${e.message}\`\n\n🤖 **تم التحويل تلقائياً للمحرك الأساسي (Gemini 1.5)، اليك الرد:**\n\n${fallbackReply}`;
         } catch (fallbackError: any) {
              return `❌ فشل كارثي! كلا المحركين متوقفان.\n\nخطأ Groq:\n\`${e.message}\`\n\nخطأ Gemini:\n\`${fallbackError.message}\``;
@@ -133,9 +145,15 @@ export async function chatGemini(text: string) {
 }
 
 // الموديل الخارق (Gemini 1.5 Pro) للمهام المعقدة جداً
-export async function chatProGemini(text: string) {
+export async function chatProGemini(text: string, history: {role: string, content: string}[] = []) {
     try {
-        const res = await proModel.generateContent(text);
+        const chat = proModel.startChat({
+            history: history.map(h => ({
+                role: h.role, // 'user' or 'model'
+                parts: [{ text: h.content }]
+            }))
+        });
+        const res = await chat.sendMessage(text);
         return res.response.text();
     } catch(e: any) {
         console.error("Gemini PRO Chat Error:", e);

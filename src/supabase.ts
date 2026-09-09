@@ -23,20 +23,22 @@ export async function getUserTodos(userId: string) {
     }
 }
 
-export async function isUpdateProcessed(updateId: number): Promise<boolean> {
+export async function tryMarkUpdateProcessed(updateId: number): Promise<boolean> {
     try {
-        const { data } = await supabase.from('processed_updates').select('update_id').eq('update_id', updateId).single();
-        return !!data;
-    } catch {
-        return false;
-    }
-}
-
-export async function markUpdateProcessed(updateId: number) {
-    try {
-        await supabase.from('processed_updates').insert([{ update_id: updateId }]);
+        const { error } = await supabase.from('processed_updates').insert([{ update_id: updateId }]);
+        if (error) {
+            // Postgres unique_violation code is '23505'
+            if (error.code === '23505') {
+                return false; // Already processed
+            }
+            console.error("Failed to mark update", error);
+            // On other errors, we might want to return true to still process it, or false to skip. Let's return true to fallback gracefully.
+            return true; 
+        }
+        return true; // Successfully marked
     } catch (e) {
-        console.error("Failed to mark update", e);
+        console.error("Error in tryMarkUpdateProcessed", e);
+        return true;
     }
 }
 
@@ -45,22 +47,15 @@ export async function incrementProUsage(): Promise<number> {
     try {
         const today = new Date().toISOString().split('T')[0]; // صيغة YYYY-MM-DD
         
-        let { data, error } = await supabase
-            .from('api_usage')
-            .select('pro_requests')
-            .eq('date', today)
-            .single();
-            
-        if (!data) {
-            // أول رسالة اليوم
-            await supabase.from('api_usage').insert([{ date: today, pro_requests: 1 }]);
-            return 1;
-        } else {
-            // زيادة العداد
-            const newCount = data.pro_requests + 1;
-            await supabase.from('api_usage').update({ pro_requests: newCount }).eq('date', today);
-            return newCount;
+        // ⚡ Performance & Security Fix: Use atomic RPC function
+        const { data, error } = await supabase.rpc('increment_pro_usage_atomic', { target_date: today });
+        
+        if (error) {
+            console.error("RPC Usage Tracking Error:", error);
+            return 0;
         }
+        
+        return data as number;
     } catch (e) {
         console.error("Usage Tracking Error:", e);
         return 0; // في حالة الخطأ، نمررها برقم 0 لكي لا يتعطل البوت
