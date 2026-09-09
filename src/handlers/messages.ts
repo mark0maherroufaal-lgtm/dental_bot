@@ -6,7 +6,8 @@ import {
     generateStatsReply, 
     transcribeAudio, 
     chatProGemini,
-    processReceiptImage 
+    processReceiptImage,
+    chatPatientGemini
 } from "../gemini";
 import { parseCollegeSchedule, parseExpense } from "../ai/parser";
 import { addCollegeSessions } from "../db/schedule";
@@ -16,8 +17,22 @@ import { processAndFormatArticle } from "../services/scientific";
 import { getCurrentDateStr } from "../core/timezone";
 import { getTodaysTasks } from "../db/tasks";
 import { getTotalXp } from "../db/gamification";
+import { getChatContext, addChatContext } from "../db/context";
 
 async function processTextIntent(ctx: any, text: string, userId: string) {
+    // الفصل بين الدكتور ماركو والمرضى (Security & Persona Separation)
+    const ADMIN_ID = process.env.ADMIN_ID || "5785296270";
+    if (userId !== ADMIN_ID) {
+        await ctx.replyWithChatAction("typing");
+        const history = await getChatContext(userId, 8);
+        const reply = await chatPatientGemini(text, history);
+        
+        await addChatContext(userId, 'user', text);
+        await addChatContext(userId, 'model', reply);
+        
+        return ctx.reply(reply);
+    }
+
     const analysis = await analyzeIntent(text);
     const intent = analysis.intent;
 
@@ -113,7 +128,6 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
     else if (intent === "COMPLEX_ANALYSIS") {
         try {
             const usageCount = await incrementProUsage();
-            const { getChatContext, addChatContext } = require("../db/context");
             const history = await getChatContext(userId, 8);
 
             if (usageCount > 50) {
@@ -138,7 +152,6 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
             return ctx.reply(proReply);
         } catch (error) {
             console.error("Pro Fallback triggered:", error);
-            const { getChatContext, addChatContext } = require("../db/context");
             const history = await getChatContext(userId, 8);
             const fallbackReply = await chatGemini(text, history);
             await addChatContext(userId, 'user', text);
@@ -148,7 +161,6 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
     }
     
     else {
-        const { getChatContext, addChatContext } = require("../db/context");
         const history = await getChatContext(userId, 8);
         
         const reply = await chatGemini(text, history);

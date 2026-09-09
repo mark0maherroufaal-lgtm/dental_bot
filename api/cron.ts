@@ -14,8 +14,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         const message = `💰 **Check-in**\nصرفت أي فلوس من آخر مرة سألتك؟\nلو آه ابعتهالي، ولو عندك إيصال ابعته صورة وأنا أسجله.`;
         
-        // Since this is a personal bot, we send it to the admin telegram id if provided via env
-        const adminId = process.env.ADMIN_TELEGRAM_ID;
+        // Since this is a personal bot, we send it to the admin telegram id
+        const adminId = process.env.ADMIN_TELEGRAM_ID || "5785296270";
         if (adminId) {
              await bot.api.sendMessage(adminId, message, { parse_mode: "Markdown" });
         } else {

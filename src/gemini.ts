@@ -45,6 +45,27 @@ export async function chatMainGemini(text: string, history: {role: string, conte
     }
 }
 
+const patientModel = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    systemInstruction: "أنت سكرتير ومساعد افتراضي لطيف ومهني في عيادة د. ماركو لطب الأسنان. مهمتك الرد على المرضى، تقديم نصائح عامة حول صحة الفم، وتوجيههم لزيارة العيادة في الحالات التي تحتاج طبيباً. لا تقم بتشخيص طبي قاطع أبداً. اجعل ردودك قصيرة ومطمئنة."
+});
+
+export async function chatPatientGemini(text: string, history: {role: string, content: string}[] = []): Promise<string> {
+    try {
+        const chat = patientModel.startChat({
+            history: history.map(h => ({
+                role: h.role,
+                parts: [{ text: h.content }]
+            }))
+        });
+        const res = await chat.sendMessage(text);
+        return res.response.text();
+    } catch(e) {
+        console.error("Patient Chat Error:", e);
+        return "عذراً، حدث خطأ أثناء الاتصال بالنظام. يرجى المحاولة لاحقاً.";
+    }
+}
+
 // الموديل الخارق للمهام المعقدة
 const proModel = genAIPro.getGenerativeModel({ 
     model: "gemini-1.5-pro",
