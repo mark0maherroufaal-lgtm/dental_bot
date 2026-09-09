@@ -18,10 +18,12 @@ export async function buildDynamicRoutineMessage(telegramId: string) {
         const isDone = task.status === 'completed';
         if (isDone) completedCount++;
         
+        const safeTitle = task.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
         if (isDone) {
-            text += `✅ ${i+1}. <s>${task.title}</s>\n`;
+            text += `✅ ${i+1}. <s>${safeTitle}</s>\n`;
         } else {
-            text += `${i+1}. ${task.title}\n`;
+            text += `${i+1}. ${safeTitle}\n`;
         }
         
         if (!isDone) {
@@ -56,10 +58,20 @@ export async function buildDynamicRoutineMessage(telegramId: string) {
 
 export function setupTasksCommands(bot: Bot) {
     bot.command("todo", async (ctx) => {
-        await ctx.replyWithChatAction("typing");
-        const userId = String(ctx.from?.id);
-        const { text, buttons } = await buildDynamicRoutineMessage(userId);
-        return ctx.reply(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
+        try {
+            await ctx.replyWithChatAction("typing");
+            const userId = String(ctx.from?.id);
+            const ADMIN_ID = process.env.ADMIN_ID || "5785296270";
+            if (userId !== ADMIN_ID) {
+                return ctx.reply("عذراً، هذه الأوامر مخصصة لإدارة العيادة فقط.");
+            }
+            
+            const { text, buttons } = await buildDynamicRoutineMessage(userId);
+            return ctx.reply(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
+        } catch (e: any) {
+            console.error("Todo error:", e);
+            return ctx.reply("❌ حدث خطأ داخلي أثناء معالجة المهام:\n" + e.message);
+        }
     });
 
     bot.command("review", async (ctx) => {

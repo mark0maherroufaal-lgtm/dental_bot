@@ -1,42 +1,17 @@
 import { Bot } from "grammy";
-import { setupGeneralCommands } from "./commands/general";
-import { setupScienceCommands } from "./commands/science";
-import { setupGamificationCommands } from "./commands/gamification";
-import { setupTasksCommands } from "./commands/tasks";
-import { setupCallbackHandlers } from "./handlers/callbacks";
-import { setupMessageHandlers } from "./handlers/messages";
-
-// 🚀 الحل القاطع الجذري: تمرير معلومات البوت يدوياً لمنع خطأ التهيئة للأبد
-export const bot = new Bot(process.env.BOT_TOKEN!, {
-    botInfo: {
-        id: 8696849914,
-        is_bot: true,
-        first_name: "My Dental Secretary",
-        username: "Marko_Dental_bot",
-        can_join_groups: true,
-        can_read_all_group_messages: false,
-        supports_inline_queries: false,
-        supports_guest_queries: false,
-        can_connect_to_business: false,
-        has_main_web_app: false,
-        has_topics_enabled: false,
-        allows_users_to_create_topics: false,
-        can_manage_bots: false,
-        supports_join_request_queries: false
+import { chatGemini, parseReminder } from "./gemini";
+import { addTodo } from "./supabase";
+export const bot = new Bot(process.env.BOT_TOKEN!);
+bot.command("start", (ctx) => ctx.reply("أهلاً دكتور ماركو! البوت السحابي يعمل بكفاءة 🚀"));
+bot.on("message:text", async (ctx) => {
+    const text = ctx.message.text;
+    if (text.includes("فكرني") || text.includes("ذكرني")) {
+        const parsed = await parseReminder(text);
+        if (parsed) {
+            await addTodo(parsed.task, parsed.date, String(ctx.from?.id));
+            return ctx.reply(`✅ تم الجدولة:\nالمهمة: ${parsed.task}\nالتاريخ: ${parsed.date}`);
+        }
     }
+    await ctx.replyWithChatAction("typing");
+    ctx.reply(await chatGemini(text));
 });
-
-bot.catch((err) => {
-    console.error(`Error while handling update ${err.ctx.update.update_id}:`);
-    console.error(err.error);
-});
-
-// تسجيل الأوامر (Commands)
-setupGeneralCommands(bot);
-setupScienceCommands(bot);
-setupGamificationCommands(bot);
-setupTasksCommands(bot);
-
-// تسجيل معالجات الأحداث (Handlers)
-setupCallbackHandlers(bot);
-setupMessageHandlers(bot);
