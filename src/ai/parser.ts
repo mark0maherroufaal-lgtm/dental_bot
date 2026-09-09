@@ -4,7 +4,7 @@ import { z } from "zod";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const jsonModel = genAI.getGenerativeModel({ 
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
     generationConfig: { responseMimeType: "application/json" }
 });
 

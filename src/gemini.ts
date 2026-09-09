@@ -20,13 +20,13 @@ const SYSTEM_INSTRUCTIONS = `
 
 // الأساسي للتحليل السريع (Intents & Parsing)
 const jsonModel = genAI.getGenerativeModel({ 
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
     generationConfig: { responseMimeType: "application/json" }
 });
 
 // الموديل الخارق للمهام المعقدة
 const proModel = genAIPro.getGenerativeModel({ 
-    model: "gemini-3.7-flash",
+    model: "gemini-1.5-pro",
     systemInstruction: "أنت خبير ومعاون طبي محترف للدكتور ماركو. قم بتحليل الطلب بعمق وقدم تفاصيل دقيقة واحترافية."
 });
 
@@ -42,7 +42,7 @@ const ReminderSchema = z.object({
 
 export async function transcribeAudio(audioBase64: string): Promise<string> {
     try {
-        const audioModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const audioModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const res = await audioModel.generateContent([
             { text: "فرغ هذا الصوت بدقة. إذا كان بالعامية المصرية اكتبه كما هو (لا تغير الكلمات إلى فصحى). اكتب النص فقط بدون أي إضافات." },
             { inlineData: { data: audioBase64, mimeType: "audio/ogg" } }
@@ -56,7 +56,7 @@ export async function transcribeAudio(audioBase64: string): Promise<string> {
 
 export async function processReceiptImage(imageBase64: string): Promise<string> {
     try {
-        const visionModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const res = await visionModel.generateContent([
             { text: "هذه صورة إيصال أو فاتورة. استخرج منها العناصر التالية واكتبها في نص واضح: إجمالي المبلغ، العملة، وماذا تم الشراء (أو تصنيفه التقريبي)." },
             { inlineData: { data: imageBase64, mimeType: "image/jpeg" } }
@@ -93,7 +93,7 @@ export async function analyzeIntent(text: string) {
     }
 }
 
-// الموديل الوسيط (Groq - Qwen 3.8 27B) للاستخدام اليومي والدردشة العامة
+// الموديل الوسيط (Groq - Llama 3.3 70B) للاستخدام اليومي والدردشة العامة
 export async function chatGemini(text: string) {
     try {
         const response = await groq.chat.completions.create({
@@ -101,7 +101,7 @@ export async function chatGemini(text: string) {
                 { role: "system", content: SYSTEM_INSTRUCTIONS },
                 { role: "user", content: text }
             ],
-            model: "qwen/qwen3.8-27b",
+            model: "llama-3.3-70b-versatile",
             max_tokens: 800
         });
         return response.choices[0]?.message?.content || "عذراً، لم أتمكن من الإجابة.";
@@ -111,7 +111,7 @@ export async function chatGemini(text: string) {
     }
 }
 
-// الموديل الخارق (Gemini 3.7 Flash) للمهام المعقدة جداً
+// الموديل الخارق (Gemini 1.5 Pro) للمهام المعقدة جداً
 export async function chatProGemini(text: string) {
     try {
         const res = await proModel.generateContent(text);
@@ -149,7 +149,7 @@ export async function generateStatsReply(text: string, statsData: any) {
                 { role: "system", content: "أنت سكرتير دكتور ماركو ومحلل بيانات. أجب باختصار واحترافية وبدون ذكر كلمة JSON. قدم ملخصاً لإنتاجيته والمصروفات." },
                 { role: "user", content: `الوقت الآن: ${now}.\nالسؤال: "${text}"\nبيانات الإحصائيات (JSON): ${JSON.stringify(statsData)}` }
             ],
-            model: "qwen/qwen3.8-27b",
+            model: "llama-3.3-70b-versatile",
             max_tokens: 800
         });
         return response.choices[0]?.message?.content || "عذراً يا دكتور، حدث خطأ.";
