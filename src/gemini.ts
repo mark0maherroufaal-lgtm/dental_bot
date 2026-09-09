@@ -24,6 +24,21 @@ const jsonModel = genAI.getGenerativeModel({
     generationConfig: { responseMimeType: "application/json" }
 });
 
+const textModel = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    systemInstruction: SYSTEM_INSTRUCTIONS
+});
+
+export async function chatMainGemini(text: string): Promise<string> {
+    try {
+        const res = await textModel.generateContent(text);
+        return res.response.text();
+    } catch(e) {
+        console.error("Gemini Main Chat Error:", e);
+        return "حدث خطأ في الموديل الأساسي.";
+    }
+}
+
 // الموديل الخارق للمهام المعقدة
 const proModel = genAIPro.getGenerativeModel({ 
     model: "gemini-1.5-pro",
@@ -101,7 +116,7 @@ export async function chatGemini(text: string) {
                 { role: "system", content: SYSTEM_INSTRUCTIONS },
                 { role: "user", content: text }
             ],
-            model: "llama-3.3-70b-versatile",
+            model: "llama3-8b-8192",
             max_tokens: 800
         });
         return response.choices[0]?.message?.content || "عذراً، لم أتمكن من الإجابة.";
@@ -149,7 +164,7 @@ export async function generateStatsReply(text: string, statsData: any) {
                 { role: "system", content: "أنت سكرتير دكتور ماركو ومحلل بيانات. أجب باختصار واحترافية وبدون ذكر كلمة JSON. قدم ملخصاً لإنتاجيته والمصروفات." },
                 { role: "user", content: `الوقت الآن: ${now}.\nالسؤال: "${text}"\nبيانات الإحصائيات (JSON): ${JSON.stringify(statsData)}` }
             ],
-            model: "llama-3.3-70b-versatile",
+            model: "llama3-8b-8192",
             max_tokens: 800
         });
         return response.choices[0]?.message?.content || "عذراً يا دكتور، حدث خطأ.";

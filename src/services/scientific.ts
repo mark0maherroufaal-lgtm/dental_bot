@@ -1,4 +1,4 @@
-import { chatGemini } from "../gemini";
+import { chatMainGemini } from "../gemini";
 import { addArticleRecord, updateArticleStatus, ScientificArticle } from "../db/articles";
 
 export async function processAndFormatArticle(telegramId: string, articleText: string, sourceUrl?: string): Promise<{ text: string, articleId: string }> {
@@ -37,7 +37,7 @@ export async function processAndFormatArticle(telegramId: string, articleText: s
 "${articleText}"
 `;
 
-    const summary = await chatGemini(prompt);
+    const summary = await chatMainGemini(prompt);
     
     // Attempt to extract title and topic from summary naively for DB, 
     // or we can just ask Gemini to return JSON, but the prompt asked for a specific presentation format.
