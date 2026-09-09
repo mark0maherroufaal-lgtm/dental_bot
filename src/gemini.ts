@@ -108,7 +108,7 @@ export async function analyzeIntent(text: string) {
     }
 }
 
-// الموديل الوسيط (Groq - Llama 3.3 70B) للاستخدام اليومي والدردشة العامة
+// الموديل الوسيط (Groq - Llama 3.1 8B) للاستخدام اليومي والدردشة العامة
 export async function chatGemini(text: string) {
     try {
         const response = await groq.chat.completions.create({
@@ -116,13 +116,19 @@ export async function chatGemini(text: string) {
                 { role: "system", content: SYSTEM_INSTRUCTIONS },
                 { role: "user", content: text }
             ],
-            model: "llama3-8b-8192",
+            model: "qwen/qwen3.8-27b",
             max_tokens: 800
         });
         return response.choices[0]?.message?.content || "عذراً، لم أتمكن من الإجابة.";
     } catch(e: any) {
         console.error("Groq Chat Error:", e);
-        return "حدث خطأ في الموديل الوسيط: " + e.message;
+        try {
+            // Fallback to Gemini 1.5 Flash
+            const fallbackReply = await chatMainGemini(text);
+            return `⚠️ **تنبيه تقني:** توقف المحرك الوسيط (Groq) للسبب التالي:\n\`${e.message}\`\n\n🤖 **تم التحويل تلقائياً للمحرك الأساسي (Gemini 1.5)، اليك الرد:**\n\n${fallbackReply}`;
+        } catch (fallbackError: any) {
+             return `❌ فشل كارثي! كلا المحركين متوقفان.\n\nخطأ Groq:\n\`${e.message}\`\n\nخطأ Gemini:\n\`${fallbackError.message}\``;
+        }
     }
 }
 
@@ -164,12 +170,19 @@ export async function generateStatsReply(text: string, statsData: any) {
                 { role: "system", content: "أنت سكرتير دكتور ماركو ومحلل بيانات. أجب باختصار واحترافية وبدون ذكر كلمة JSON. قدم ملخصاً لإنتاجيته والمصروفات." },
                 { role: "user", content: `الوقت الآن: ${now}.\nالسؤال: "${text}"\nبيانات الإحصائيات (JSON): ${JSON.stringify(statsData)}` }
             ],
-            model: "llama3-8b-8192",
+            model: "qwen/qwen3.8-27b",
             max_tokens: 800
         });
         return response.choices[0]?.message?.content || "عذراً يا دكتور، حدث خطأ.";
     } catch(e: any) {
         console.error("Groq Stats Error:", e);
-        return "عذراً يا دكتور، حدث خطأ: " + e.message;
+        try {
+            const now = new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" });
+            const prompt = `أنت سكرتير دكتور ماركو ومحلل بيانات. أجب باختصار واحترافية وبدون ذكر كلمة JSON.\nالوقت الآن: ${now}.\nالسؤال: "${text}"\nبيانات الإحصائيات (JSON): ${JSON.stringify(statsData)}`;
+            const fallbackReply = await chatMainGemini(prompt);
+            return `⚠️ **تنبيه تقني:** توقف المحرك الوسيط للسبب التالي:\n\`${e.message}\`\n\n🤖 **تم تلخيص إحصائياتك بواسطة المحرك الأساسي البديل:**\n\n${fallbackReply}`;
+        } catch (fallbackError: any) {
+            return `❌ تعطلت جميع المحركات!\nخطأ Groq: \`${e.message}\`\nخطأ Gemini: \`${fallbackError.message}\``;
+        }
     }
 }
