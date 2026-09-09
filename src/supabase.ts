@@ -77,3 +77,21 @@ export async function recordReadArticle(title: string, userId: string) {
     }
     return data;
 }
+
+export async function getReadArticlesCount(userId: string): Promise<number> {
+    try {
+        const { count, error } = await supabase
+            .from("read_articles")
+            .select('*', { count: 'exact', head: true })
+            .eq("user_id", userId);
+            
+        if (error) {
+            console.error("Error fetching articles count:", error);
+            return 0;
+        }
+        return count || 0;
+    } catch (e) {
+        console.error("Error in getReadArticlesCount:", e);
+        return 0;
+    }
+}

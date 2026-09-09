@@ -20,7 +20,7 @@ const SYSTEM_INSTRUCTIONS = `
 
 // الأساسي للتحليل السريع (Intents & Parsing)
 const jsonModel = genAI.getGenerativeModel({ 
-    model: "gemini-flash-lite-latest",
+    model: "gemini-2.0-flash",
     generationConfig: { responseMimeType: "application/json" }
 });
 
@@ -32,7 +32,7 @@ const proModel = genAIPro.getGenerativeModel({
 
 // مخططات تحليل النوايا والمهام
 const IntentSchema = z.object({
-    intent: z.enum(["CREATE_REMINDER", "STATISTICS", "MEDICAL_EMERGENCY", "COMPLEX_ANALYSIS", "GENERAL_CHAT"])
+    intent: z.enum(["CREATE_REMINDER", "STATISTICS", "MEDICAL_EMERGENCY", "COMPLEX_ANALYSIS", "COLLEGE_SCHEDULE", "EXPENSE", "ARTICLE_SUMMARY", "GENERAL_CHAT"])
 });
 
 const ReminderSchema = z.object({
@@ -42,7 +42,7 @@ const ReminderSchema = z.object({
 
 export async function transcribeAudio(audioBase64: string): Promise<string> {
     try {
-        const audioModel = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+        const audioModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         const res = await audioModel.generateContent([
             { text: "فرغ هذا الصوت بدقة. إذا كان بالعامية المصرية اكتبه كما هو (لا تغير الكلمات إلى فصحى). اكتب النص فقط بدون أي إضافات." },
             { inlineData: { data: audioBase64, mimeType: "audio/ogg" } }
@@ -54,15 +54,32 @@ export async function transcribeAudio(audioBase64: string): Promise<string> {
     }
 }
 
+export async function processReceiptImage(imageBase64: string): Promise<string> {
+    try {
+        const visionModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const res = await visionModel.generateContent([
+            { text: "هذه صورة إيصال أو فاتورة. استخرج منها العناصر التالية واكتبها في نص واضح: إجمالي المبلغ، العملة، وماذا تم الشراء (أو تصنيفه التقريبي)." },
+            { inlineData: { data: imageBase64, mimeType: "image/jpeg" } }
+        ]);
+        return res.response.text().trim();
+    } catch(e) {
+        console.error("Image Processing Error:", e);
+        throw new Error("Failed to process receipt image");
+    }
+}
+
 export async function analyzeIntent(text: string) {
     try {
         const prompt = `
-أنت محلل نوايا لعيادة أسنان. اقرأ طلب المستخدم التالي بدقة.
+أنت محلل نوايا لعيادة أسنان ولإدارة حياة دكتور ماركو. اقرأ طلب المستخدم التالي بدقة.
 يجب أن ترجع فقط JSON صالح يحتوي على مفتاح "intent" بقيمة واحدة من الخيارات التالية فقط:
 "CREATE_REMINDER" (لإضافة مهمة أو موعد)
-"STATISTICS" (للاستعلام عن جدول الأعمال أو مهام اليوم)
+"STATISTICS" (للاستعلام عن جدول الأعمال أو الإحصائيات)
+"COLLEGE_SCHEDULE" (إذا كان المستخدم يرسل جدول كليته أو مواعيد سكاشن ومحاضرات)
+"EXPENSE" (إذا كان المستخدم يسجل مصروفات، دفع أموال، أو اشترى شيئاً)
+"ARTICLE_SUMMARY" (إذا طلب المستخدم تلخيص مقال طبي أو أرسل نص/abstract ليتم تلخيصه)
 "MEDICAL_EMERGENCY" (للحالات الطارئة أو النزيف الشديد وألم شديد)
-"COMPLEX_ANALYSIS" (إذا طلب تقريراً علمياً مفصلاً، تحليل حالة طبية معقدة، أو خطة علاج دقيقة جداً)
+"COMPLEX_ANALYSIS" (إذا طلب تقريراً علمياً مفصلاً، تحليل حالة طبية معقدة)
 "GENERAL_CHAT" (لأي دردشة عادية أو استشارة بسيطة)
 
 النص: "${text}"
@@ -124,13 +141,13 @@ export async function parseReminder(text: string) {
     }
 }
 
-export async function generateStatsReply(text: string, todos: any[]) {
+export async function generateStatsReply(text: string, statsData: any) {
     try {
         const now = new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" });
         const response = await groq.chat.completions.create({
             messages: [
-                { role: "system", content: "أنت سكرتير دكتور ماركو. أجب باختصار واحترافية وبدون ذكر كلمة JSON." },
-                { role: "user", content: `الوقت الآن: ${now}.\nالسؤال: "${text}"\nالمهام (JSON): ${JSON.stringify(todos)}` }
+                { role: "system", content: "أنت سكرتير دكتور ماركو ومحلل بيانات. أجب باختصار واحترافية وبدون ذكر كلمة JSON. قدم ملخصاً لإنتاجيته والمصروفات." },
+                { role: "user", content: `الوقت الآن: ${now}.\nالسؤال: "${text}"\nبيانات الإحصائيات (JSON): ${JSON.stringify(statsData)}` }
             ],
             model: "qwen/qwen3.8-27b",
             max_tokens: 800
