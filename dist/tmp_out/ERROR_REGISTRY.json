@@ -1,0 +1,75 @@
+{
+  "sequence": 5,
+  "records": {
+    "ERR-2026-000001": {
+      "id": "ERR-2026-000001",
+      "timestamp": "2026-09-13T23:07:04.999Z",
+      "severity": "HIGH",
+      "component": "QATest",
+      "functionName": "/status",
+      "file": "qaTester.ts",
+      "line": 0,
+      "originalError": "Validation failed for /status\nError: Validation failed for /status\n    at assertCommand (C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\core\\qaTester.js:75:36)\n    at async runTests (C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\core\\qaTester.js:85:5)",
+      "rootCause": "Error at qaTester.ts:0 - Validation failed for /status",
+      "status": "OPEN",
+      "occurrences": 2,
+      "lastSeen": "2026-09-13T23:08:06.306Z"
+    },
+    "ERR-2026-000002": {
+      "id": "ERR-2026-000002",
+      "timestamp": "2026-09-13T23:08:20.928Z",
+      "severity": "HIGH",
+      "component": "Database",
+      "functionName": "getTodaysTasks",
+      "file": "C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\db\\tasks.js",
+      "line": 38,
+      "originalError": "[object Object]",
+      "rootCause": "Error at C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\db\\tasks.js:38 - [object Object]",
+      "status": "OPEN",
+      "occurrences": 2,
+      "lastSeen": "2026-09-13T23:08:33.522Z"
+    },
+    "ERR-2026-000003": {
+      "id": "ERR-2026-000003",
+      "timestamp": "2026-09-13T23:13:11.889Z",
+      "severity": "HIGH",
+      "component": "Database",
+      "functionName": "addXpTransaction",
+      "file": "C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\db\\gamification.js",
+      "line": 17,
+      "originalError": "[object Object]",
+      "rootCause": "Error at C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\db\\gamification.js:17 - [object Object]",
+      "status": "OPEN",
+      "occurrences": 1,
+      "lastSeen": "2026-09-13T23:13:11.889Z"
+    },
+    "ERR-2026-000004": {
+      "id": "ERR-2026-000004",
+      "timestamp": "2026-09-13T23:13:12.007Z",
+      "severity": "MEDIUM",
+      "component": "QATest",
+      "functionName": "dummy",
+      "file": "dummy.ts",
+      "line": 1,
+      "originalError": "Test QA Error\nError: Test QA Error\n    at runTests (C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\core\\qaTester.js:147:24)",
+      "rootCause": "Error at dummy.ts:1 - Test QA Error",
+      "status": "OPEN",
+      "occurrences": 1,
+      "lastSeen": "2026-09-13T23:13:12.007Z"
+    },
+    "ERR-2026-000005": {
+      "id": "ERR-2026-000005",
+      "timestamp": "2026-09-14T16:27:19.005Z",
+      "severity": "HIGH",
+      "component": "API",
+      "functionName": "getGenAI",
+      "file": "C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\gemini.js",
+      "line": 20,
+      "originalError": "GEMINI_API_KEY is not configured.\nError: GEMINI_API_KEY is not configured.\n    at getGenAI (C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\gemini.js:20:15)\n    at getTextModel (C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\gemini.js:37:12)\n    at Object.chatMainGemini (C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\gemini.js:51:22)\n    at [eval]:1:179\n    at runScriptInThisContext (node:internal/vm:219:10)\n    at node:internal/process/execution:451:12\n    at [eval]-wrapper:6:24\n    at runScriptInContext (node:internal/process/execution:449:60)\n    at evalFunction (node:internal/process/execution:283:30)\n    at evalTypeScript (node:internal/process/execution:295:3)",
+      "rootCause": "Error at C:\\Users\\hp\\.gemini\\antigravity\\scratch\\dental_bot_vercel\\dist\\src\\gemini.js:20 - GEMINI_API_KEY is not configured.",
+      "status": "OPEN",
+      "occurrences": 1,
+      "lastSeen": "2026-09-14T16:27:19.005Z"
+    }
+  }
+}

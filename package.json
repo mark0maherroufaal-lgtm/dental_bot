@@ -1,15 +1,18 @@
 {
-  "name": "marko-whatsapp-bridge",
-  "version": "1.0.0",
-  "description": "WhatsApp listener for college group, forwards to Vercel bot",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "dr-marko-bot",
+  "version": "2.0.0",
+  "scripts": { "build": "tsc" },
   "dependencies": {
-    "axios": "^1.20.0",
-    "pino": "^9.3.2",
-    "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.34.7"
+    "@google/generative-ai": "^0.21.0",
+    "@supabase/supabase-js": "^2.39.7",
+    "grammy": "^1.21.1",
+    "groq-sdk": "^0.3.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@vercel/node": "^3.0.1",
+    "typescript": "^5.3.3"
   }
 }

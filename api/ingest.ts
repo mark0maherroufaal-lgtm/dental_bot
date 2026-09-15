@@ -24,18 +24,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const result = await parseAcademicUpdate(text);
         
         if (result.events && result.events.length > 0) {
-            const inserts = result.events.map(event => ({
-                event_type: event.event_type,
-                title: event.title,
-                event_date: event.event_date,
-                original_message: text
-            }));
-            
-            const { error } = await supabase.from('academic_events').insert(inserts);
-            
-            if (error) {
-                console.error("Failed to insert academic events:", error);
-                return res.status(500).send("Database Error");
+            for (const event of result.events) {
+                // Deduplication: Check if an active event with the same title and date already exists
+                let query = supabase.from('academic_events').select('id').eq('title', event.title).eq('is_completed', false);
+                
+                if (event.event_date) {
+                    query = query.eq('event_date', event.event_date);
+                } else {
+                    query = query.is('event_date', null);
+                }
+
+                const { data: existing } = await query.limit(1);
+
+                if (!existing || existing.length === 0) {
+                    // Only insert if it doesn't exist
+                    await supabase.from('academic_events').insert({
+                        event_type: event.event_type,
+                        title: event.title,
+                        event_date: event.event_date,
+                        original_message: text
+                    });
+                } else {
+                    console.log(`Duplicate event ignored: ${event.title}`);
+                }
             }
         }
 
