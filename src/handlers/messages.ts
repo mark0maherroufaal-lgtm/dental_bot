@@ -10,10 +10,11 @@ import {
     chatPatientGemini
 } from "../gemini";
 import { parseCollegeSchedule, parseExpense } from "../ai/parser";
-import { addCollegeSessions } from "../db/schedule";
+import { diffAndApplySchedule } from "../db/schedule";
 import { addExpense } from "../db/expenses";
 import { addTodo, incrementProUsage } from "../supabase";
 import { processAndFormatArticle } from "../services/scientific";
+import { handleReminderAction } from "../services/reminders";
 import { getCurrentDateStr } from "../core/timezone";
 import { getTodaysTasks } from "../db/tasks";
 import { getTotalXp } from "../db/gamification";
@@ -33,11 +34,30 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
         return ctx.reply(reply);
     }
 
-    const analysis = await analyzeIntent(text);
-    const intent = analysis.intent;
+    let intent = "GENERAL_CHAT";
+
+    // --- Phase 10: Deterministic Pre-Router ---
+    const lowerText = text.toLowerCase();
+    if (/^(فكرني|ذكرني|remind|schedule task)/.test(lowerText)) {
+        intent = "CREATE_REMINDER";
+    } else if (/^(خليها|بدل|تأجيل|reschedule|postpone)/.test(lowerText)) {
+        intent = "RESCHEDULE_TASK";
+    } else if (/^(امسح|الغي|cancel|delete task)/.test(lowerText)) {
+        intent = "CANCEL_TASK";
+    } else if (/(جدول|schedule|timetable)/.test(lowerText) && lowerText.includes("day_of_week")) {
+        intent = "COLLEGE_SCHEDULE";
+    } else if (/^(احصائيات|stats|statistics|تقدمي)/.test(lowerText)) {
+        intent = "STATISTICS";
+    } else if (/^(طوارئ|emergency|نزيف)/.test(lowerText)) {
+        intent = "MEDICAL_EMERGENCY";
+    } else {
+        // Fallback to LLM if it's ambiguous
+        const aiIntent = await analyzeIntent(text);
+        intent = aiIntent.intent;
+    }
 
     if (intent === "MEDICAL_EMERGENCY") {
-        return ctx.reply("⚠️ تنبيه: أنا مساعد ذكي ولست طبيباً. يبدو أن هذا الاستفسار طبي خطير. يُرجى استشارة طبيب بشري أو التوجه لأقرب عيادة فوراً.");
+        return ctx.reply("🚨 هذه حالة طوارئ! يرجى التوجه لأقرب مستشفى أو الاتصال بالطبيب فوراً.");
     } 
     
     else if (intent === "EXPENSE") {
@@ -55,7 +75,7 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
                 });
                 return ctx.reply(`✅ تم تسجيل المصروف بنجاح:\n💰 ${expenseDetails.amount} ${expenseDetails.currency}\n📂 ${expenseDetails.category}\n📝 ${expenseDetails.description || "بدون وصف"}`);
             } catch (e) {
-                return ctx.reply("❌ حدث خطأ أثناء تسجيل المصروف في قاعدة البيانات.");
+                throw e;
             }
         } else {
             return ctx.reply("🤔 فهمت أنك تريد تسجيل مصروف، لكنني لم أتمكن من تحديد المبلغ بدقة. كم دفعت بالظبط وفي ماذا؟");
@@ -79,7 +99,7 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
                 }
             });
         } catch (e) {
-            return ctx.reply("❌ حدث خطأ أثناء تلخيص وحفظ المقال.");
+            throw e;
         }
     }
     
@@ -89,23 +109,24 @@ async function processTextIntent(ctx: any, text: string, userId: string) {
         if (schedule && schedule.sessions.length > 0) {
             try {
                 // @ts-ignore (Assuming schedule output maps to DB requirements)
-                await addCollegeSessions(userId, schedule.sessions as any[]);
-                return ctx.reply(`✅ تم فهم وحفظ جدول الكلية بنجاح!\nسأقوم تلقائياً باقتراح مهام "تدريب استباقي" في اليوم الذي يسبق أي سكشن عملي.`);
+                const result = await diffAndApplySchedule(userId, schedule.sessions as any[]);
+                return ctx.reply(`✅ تم حفظ جدول الكلية بنجاح!\nتمت إضافة ${result.added} مادة جديدة، وحذف ${result.removed} مادة ملغية.`);
             } catch (e) {
-                return ctx.reply("❌ حدث خطأ أثناء حفظ الجدول في قاعدة البيانات.");
+                throw e;
             }
         } else {
             return ctx.reply("❌ لم أتمكن من استخراج المواعيد من النص. هل يمكنك توضيح الجدول أكثر؟");
         }
     }
     
-    else if (intent === "CREATE_REMINDER") {
+    else if (intent === "CREATE_REMINDER" || intent === "RESCHEDULE_TASK" || intent === "CANCEL_TASK") {
+        await ctx.replyWithChatAction("typing");
         const parsed = await parseReminder(text);
-        if (parsed && parsed.task && parsed.date) {
-            await addTodo(parsed.task, parsed.date, userId);
-            return ctx.reply(`✅ تم تسجيل المهمة بنجاح:\n📌 ${parsed.task}\n📅 ${parsed.date}`);
+        if (parsed) {
+            const reply = await handleReminderAction(userId, parsed);
+            return ctx.reply(reply);
         } else {
-            return ctx.reply("❌ عذراً، لم أتمكن من فهم التاريخ بدقة. هل يمكنك توضيحه؟");
+            return ctx.reply("❌ لم أتمكن من استخراج تفاصيل التذكير بوضوح. الرجاء المحاولة بصيغة أوضح.");
         }
     } 
     
@@ -190,7 +211,7 @@ export function setupMessageHandlers(bot: Bot) {
             const file = await ctx.getFile();
             if (!file.file_path) throw new Error("File path missing");
 
-            const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+            const fileUrl = `https://api.telegram.org/file/bot${ctx.api.token}/${file.file_path}`;
             const response = await fetch(fileUrl);
             if (!response.ok) throw new Error("Failed to download audio");
 
@@ -201,8 +222,7 @@ export function setupMessageHandlers(bot: Bot) {
             await processTextIntent(ctx, transcribedText, String(ctx.from?.id));
 
         } catch (error) {
-            console.error("Voice Processing Error:", error);
-            await ctx.reply("عذراً يا دكتور، حدث خطأ أثناء معالجة رسالتك الصوتية. يرجى المحاولة كتابياً.");
+            throw error;
         }
     });
 
@@ -218,7 +238,7 @@ export function setupMessageHandlers(bot: Bot) {
             const file = await ctx.api.getFile(fileId);
             if (!file.file_path) throw new Error("File path missing");
             
-            const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+            const fileUrl = `https://api.telegram.org/file/bot${ctx.api.token}/${file.file_path}`;
             const response = await fetch(fileUrl);
             if (!response.ok) throw new Error("Failed to download image");
             
@@ -244,8 +264,7 @@ export function setupMessageHandlers(bot: Bot) {
             }
             
         } catch (e) {
-            console.error("Receipt Processing Error:", e);
-            await ctx.reply("❌ عذراً، حدث خطأ أثناء محاولة قراءة الإيصال.");
+            throw e;
         }
     });
 }

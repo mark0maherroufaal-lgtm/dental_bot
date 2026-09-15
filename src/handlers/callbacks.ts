@@ -34,8 +34,7 @@ export function setupCallbackHandlers(bot: Bot) {
                     reply_markup: { inline_keyboard: [[{ text: "🌟 تمت القراءة (+30 XP)", callback_data: "done" }]] } 
                 });
             } catch (e) {
-                console.error(e);
-                await ctx.answerCallbackQuery({ text: "❌ حدث خطأ أثناء التحديث.", show_alert: true });
+                throw e;
             }
             return;
         }
@@ -47,7 +46,7 @@ export function setupCallbackHandlers(bot: Bot) {
                 await ctx.answerCallbackQuery({ text: "تم التأجيل. سنحاول اختيار مقال أقصر لاحقاً." });
                 await ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } });
             } catch (e) {
-                await ctx.answerCallbackQuery({ text: "❌ حدث خطأ." });
+                throw e;
             }
             return;
         }
@@ -56,17 +55,12 @@ export function setupCallbackHandlers(bot: Bot) {
         if (data.startsWith("tdo_")) {
             const taskId = data.substring(4);
             
-            try {
-                const resultMsg = await completeTask(userId, taskId);
-                await ctx.answerCallbackQuery({ text: resultMsg, show_alert: true });
-                
-                // Re-render the message
-                const { text, buttons } = await buildDynamicRoutineMessage(userId);
-                await ctx.editMessageText(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
-            } catch (e) {
-                console.error(e);
-                await ctx.answerCallbackQuery({ text: "حدث خطأ أثناء إتمام المهمة.", show_alert: true });
-            }
+            const resultMsg = await completeTask(userId, taskId);
+            await ctx.answerCallbackQuery({ text: resultMsg, show_alert: true });
+            
+            // Re-render the message
+            const { text, buttons } = await buildDynamicRoutineMessage(userId);
+            await ctx.editMessageText(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
         }
     });
 }

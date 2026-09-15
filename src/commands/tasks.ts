@@ -58,20 +58,15 @@ export async function buildDynamicRoutineMessage(telegramId: string) {
 
 export function setupTasksCommands(bot: Bot) {
     bot.command("todo", async (ctx) => {
-        try {
-            await ctx.replyWithChatAction("typing");
-            const userId = String(ctx.from?.id);
-            const ADMIN_ID = process.env.ADMIN_ID || "5785296270";
-            if (userId !== ADMIN_ID) {
-                return ctx.reply("عذراً، هذه الأوامر مخصصة لإدارة العيادة فقط.");
-            }
-            
-            const { text, buttons } = await buildDynamicRoutineMessage(userId);
-            return ctx.reply(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
-        } catch (e: any) {
-            console.error("Todo error:", e);
-            return ctx.reply("❌ حدث خطأ داخلي أثناء معالجة المهام:\n" + e.message);
+        await ctx.replyWithChatAction("typing");
+        const userId = String(ctx.from?.id);
+        const ADMIN_ID = process.env.ADMIN_ID || "5785296270";
+        if (userId !== ADMIN_ID) {
+            return ctx.reply("عذراً، هذه الأوامر مخصصة لإدارة العيادة فقط.");
         }
+        
+        const { text, buttons } = await buildDynamicRoutineMessage(userId);
+        return ctx.reply(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
     });
 
     bot.command("review", async (ctx) => {
@@ -89,22 +84,22 @@ export function setupTasksCommands(bot: Bot) {
         const completionRate = Math.round((completedTasks.length / tasks.length) * 100);
         const xpEarnedToday = completedTasks.reduce((sum, t) => sum + t.xp_reward, 0);
         
-        let text = `🌙 **الملخص المسائي (End-of-day Review)**\n\n`;
+        let text = `🌙 الملخص المسائي (End-of-day Review)\n\n`;
         text += `📊 نسبة الإنجاز اليوم: ${completionRate}%\n`;
         text += `✨ نقاط الـ XP المكتسبة: +${xpEarnedToday}\n\n`;
         
-        text += `✅ **المهام المنجزة:**\n`;
+        text += `✅ المهام المنجزة:\n`;
         completedTasks.forEach(t => { text += `- ${t.title}\n`; });
         
         const pendingTasks = tasks.filter(t => t.status !== 'completed');
         if (pendingTasks.length > 0) {
-            text += `\n⏳ **مهام لم تكتمل (سيتم ترحيلها أو جدولتها لاحقاً):**\n`;
+            text += `\n⏳ مهام لم تكتمل (سيتم ترحيلها أو جدولتها لاحقاً):\n`;
             pendingTasks.forEach(t => { text += `- ${t.title}\n`; });
         }
         
         text += `\nعاش يا دكتور! يوم موفق! 👏`;
         
-        return ctx.reply(text, { parse_mode: "Markdown" });
+        return ctx.reply(text);
     });
 
     bot.command("weekly", async (ctx) => {

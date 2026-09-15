@@ -10,12 +10,17 @@ export interface Task {
     priority: string;
     status: string;
     due_date?: string;
+    time?: string;
+    source?: string;
+    source_id?: string;
     duration_minutes?: number;
     xp_reward: number;
     completed_at?: string;
+    cancelled_at?: string;
 }
 
 export async function createDailyTasks(telegramId: string, tasks: Partial<Task>[]): Promise<Task[]> {
+    if (tasks.length === 0) return [];
     try {
         const tasksToInsert = tasks.map(t => ({
             telegram_id: telegramId,
@@ -24,10 +29,12 @@ export async function createDailyTasks(telegramId: string, tasks: Partial<Task>[
         }));
         
         const { data, error } = await supabase.from('tasks').insert(tasksToInsert).select();
-        if (error) throw new DatabaseError("Failed to create tasks", error);
+        if (error) throw new DatabaseError(error.message, error);
         return data as Task[];
     } catch (e: any) {
-        console.error(e);
+        if (!(e instanceof DatabaseError)) {
+            throw new DatabaseError(e.message, e);
+        }
         throw e;
     }
 }
@@ -42,11 +49,13 @@ export async function getTodaysTasks(telegramId: string, dateStr: string): Promi
             .neq('status', 'cancelled')
             .order('priority', { ascending: false });
             
-        if (error) throw new DatabaseError("Failed to get today's tasks", error);
+        if (error) throw new DatabaseError(error.message, error);
         return data || [];
     } catch (e: any) {
-        console.error(e);
-        return [];
+        if (!(e instanceof DatabaseError)) {
+            throw new DatabaseError(e.message, e);
+        }
+        throw e;
     }
 }
 
@@ -60,11 +69,13 @@ export async function getTasksInRange(telegramId: string, startDate: string, end
             .lte('due_date', endDate)
             .neq('status', 'cancelled');
             
-        if (error) throw new DatabaseError("Failed to get tasks in range", error);
+        if (error) throw new DatabaseError(error.message, error);
         return data || [];
     } catch (e: any) {
-        console.error(e);
-        return [];
+        if (!(e instanceof DatabaseError)) {
+            throw new DatabaseError(e.message, e);
+        }
+        throw e;
     }
 }
 
@@ -81,9 +92,11 @@ export async function updateTaskStatus(taskId: string, status: string, telegramI
             .eq('id', taskId)
             .eq('telegram_id', telegramId);
             
-        if (error) throw new DatabaseError("Failed to update task", error);
+        if (error) throw new DatabaseError(error.message, error);
     } catch (e: any) {
-        console.error(e);
+        if (!(e instanceof DatabaseError)) {
+            throw new DatabaseError(e.message, e);
+        }
         throw e;
     }
 }

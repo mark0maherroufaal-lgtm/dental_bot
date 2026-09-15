@@ -24,9 +24,6 @@ export function setupGeneralCommands(bot: Bot) {
         return ctx.reply("📰 أخبار عاجلة:\n\n" + reply);
     });
 
-    bot.command("status", (ctx) => {
-        ctx.reply("🟢 السيرفر السحابي (Vercel): Online\n🟢 قاعدة البيانات (Supabase): Online\n🟢 الذكاء الاصطناعي (Groq/Gemini): Online\n⚡ النظام يعمل بأقصى كفاءة.");
-    });
 
     bot.command("channels", (ctx) => {
         ctx.reply("📡 حالة القنوات الثلاث:\n1. القناة الأكاديمية: 🟢 تعمل\n2. قناة العيادة: 🟢 تعمل\n3. القناة الشخصية: 🟢 تعمل");
