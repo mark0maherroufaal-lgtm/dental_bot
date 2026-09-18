@@ -176,8 +176,8 @@ Return ONLY valid JSON.`;
 }
 
 export async function generateStatsReply(text: string, statsData: any) {
-    const prompt = `أنت سكرتير. النص: "${text}"\nبيانات: ${JSON.stringify(statsData)}`;
-    return await chatMainGemini(prompt);
+    const prompt = `مهامي اليوم والإحصائيات. طلب المستخدم: "${text}"\nبيانات المهام: ${JSON.stringify(statsData)}\nأجب على المستخدم بطريقة ملهمة كأنك مساعده الشخصي (دكتور ماركو). اعرض المهام بوضوح.`;
+    return await chatGemini(prompt, []);
 }
 
 export async function transcribeAudio(audioBase64: string): Promise<string> {

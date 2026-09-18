@@ -21,17 +21,10 @@ import { getTotalXp } from "../db/gamification";
 import { getChatContext, addChatContext } from "../db/context";
 
 async function processTextIntent(ctx: any, text: string, userId: string) {
-    // الفصل بين الدكتور ماركو والمرضى (Security & Persona Separation)
-    const ADMIN_ID = process.env.ADMIN_ID || "5785296270";
+    // Strict Security: Bot is EXCLUSIVELY for Marko
+    const ADMIN_ID = process.env.ADMIN_TELEGRAM_ID || "5785296270";
     if (userId !== ADMIN_ID) {
-        await ctx.replyWithChatAction("typing");
-        const history = await getChatContext(userId, 8);
-        const reply = await chatPatientGemini(text, history);
-        
-        await addChatContext(userId, 'user', text);
-        await addChatContext(userId, 'model', reply);
-        
-        return ctx.reply(reply);
+        return ctx.reply("عذراً، هذا البوت مبرمج ليكون المساعد الشخصي لدكتور ماركو فقط ولا يمكن للآخرين استخدامه.");
     }
 
     let intent = "GENERAL_CHAT";
