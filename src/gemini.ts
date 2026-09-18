@@ -176,7 +176,8 @@ Return ONLY valid JSON.`;
 }
 
 export async function generateStatsReply(text: string, statsData: any) {
-    const prompt = `مهامي اليوم والإحصائيات. طلب المستخدم: "${text}"\nبيانات المهام: ${JSON.stringify(statsData)}\nأجب على المستخدم بطريقة ملهمة كأنك مساعده الشخصي (دكتور ماركو). اعرض المهام بوضوح.`;
+    const hasTasks = statsData.today_tasks && statsData.today_tasks.length > 0;
+    const prompt = `طلب المستخدم: "${text}"\nبيانات المهام اليوم: ${JSON.stringify(statsData)}\nأنت المساعد الشخصي لدكتور ماركو. ${hasTasks ? 'اعرض هذه المهام بوضوح وشجعه.' : 'أخبره أنه لا يوجد لديه أي مهام مسجلة لهذا اليوم، وتمنى له يوماً سعيداً.'} تحدث بلهجة مصرية قصيرة.`;
     return await chatGemini(prompt, []);
 }
 
