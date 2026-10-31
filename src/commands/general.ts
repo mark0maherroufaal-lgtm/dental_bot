@@ -28,4 +28,9 @@ export function setupGeneralCommands(bot: Bot) {
     bot.command("channels", (ctx) => {
         ctx.reply("📡 حالة القنوات الثلاث:\n1. القناة الأكاديمية: 🟢 تعمل\n2. قناة العيادة: 🟢 تعمل\n3. القناة الشخصية: 🟢 تعمل");
     });
+
+    bot.command("ping", async (ctx) => {
+        const cairoTime = new Date().toLocaleTimeString("en-US", { timeZone: "Africa/Cairo" });
+        return ctx.reply(`🏓 Pong! البوت شغال وسيرفر Vercel متصل.\n🕒 توقيت القاهرة الآن: ${cairoTime}`);
+    });
 }

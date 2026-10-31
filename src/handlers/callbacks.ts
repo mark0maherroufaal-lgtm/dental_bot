@@ -51,16 +51,7 @@ export function setupCallbackHandlers(bot: Bot) {
             return;
         }
         
-        // معالجة أزرار المهام الديناميكية
-        if (data.startsWith("tdo_")) {
-            const taskId = data.substring(4);
-            
-            const resultMsg = await completeTask(userId, taskId);
-            await ctx.answerCallbackQuery({ text: resultMsg, show_alert: true });
-            
-            // Re-render the message
-            const { text, buttons } = await buildDynamicRoutineMessage(userId);
-            await ctx.editMessageText(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
-        }
+        // Note: Task buttons (tdo_, snz1h_, snz1d_, cancel_) are handled centrally in tasks_commands.ts
+        // with completeTaskWithXp, idempotent locking, and midnight-safe snooze.
     });
 }

@@ -4,8 +4,6 @@ exports.setupCallbackHandlers = setupCallbackHandlers;
 const supabase_1 = require("../supabase");
 const articles_1 = require("../db/articles");
 const gamification_1 = require("../db/gamification");
-const planner_1 = require("../services/planner");
-const tasks_1 = require("../commands/tasks");
 function setupCallbackHandlers(bot) {
     bot.on("callback_query:data", async (ctx) => {
         const data = ctx.callbackQuery.data;
@@ -46,14 +44,7 @@ function setupCallbackHandlers(bot) {
             }
             return;
         }
-        // معالجة أزرار المهام الديناميكية
-        if (data.startsWith("tdo_")) {
-            const taskId = data.substring(4);
-            const resultMsg = await (0, planner_1.completeTask)(userId, taskId);
-            await ctx.answerCallbackQuery({ text: resultMsg, show_alert: true });
-            // Re-render the message
-            const { text, buttons } = await (0, tasks_1.buildDynamicRoutineMessage)(userId);
-            await ctx.editMessageText(text, { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } });
-        }
+        // Note: Task buttons (tdo_, snz1h_, snz1d_, cancel_) are handled centrally in tasks_commands.ts
+        // with completeTaskWithXp, idempotent locking, and midnight-safe snooze.
     });
 }
